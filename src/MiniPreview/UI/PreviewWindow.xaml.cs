@@ -46,7 +46,7 @@ public partial class PreviewWindow : Window
         Loaded += OnLoaded;
         Closing += OnClosing;
         _capture.FrameReady += OnFrameReady;
-        _capture.TargetClosed += () => Dispatcher.BeginInvoke(() => ShowStatus(Strings.T("status.targetLost")));
+        _capture.TargetClosed += () => Dispatcher.BeginInvoke(() => ShowStatus(Strings.T("status.targetLost"), withPickButton: true));
     }
 
     private void ApplyLocalizedTooltips()
@@ -168,9 +168,9 @@ public partial class PreviewWindow : Window
     private void TryResumeLastTarget()
     {
         var last = _settings.Capture.LastTargetProcessName;
-        if (string.IsNullOrEmpty(last)) { ShowStatus(Strings.T("status.selectWindow")); return; }
+        if (string.IsNullOrEmpty(last)) { ShowStatus(Strings.T("status.selectWindow"), withPickButton: true); return; }
         var match = _enumerator.EnumerateVisibleWindows().FirstOrDefault(w => w.ProcessName.Equals(last, StringComparison.OrdinalIgnoreCase));
-        if (match == null) { ShowStatus(Strings.T("status.targetNotRunning", last)); return; }
+        if (match == null) { ShowStatus(Strings.T("status.targetNotRunning", last), withPickButton: true); return; }
         SetTarget(match);
     }
 
@@ -194,9 +194,11 @@ public partial class PreviewWindow : Window
         UpdateMinIcon();
     }
 
-    private void ShowStatus(string text)
+    private void ShowStatus(string text, bool withPickButton = false)
     {
         StatusText.Text = text;
+        StatusPickBtn.Content = Strings.T("status.pickButton");
+        StatusPickBtn.Visibility = withPickButton ? Visibility.Visible : Visibility.Collapsed;
         StatusOverlay.Visibility = Visibility.Visible;
     }
     private void HideStatus() => StatusOverlay.Visibility = Visibility.Collapsed;

@@ -29,6 +29,7 @@ public static class Strings
         ["status.pickNotFound"]     = new() { ["en"] = "Could not locate the selected window", ["cs"] = "Nepodařilo se najít vybrané okno" },
         ["status.noAudio"]          = new() { ["en"] = "This app is not playing any audio right now", ["cs"] = "Tato aplikace momentálně nepřehrává zvuk" },
         ["status.hotkeyFailed"]     = new() { ["en"] = "Hotkey registration failed: {0}",      ["cs"] = "Registrace klávesové zkratky selhala: {0}" },
+        ["status.pickButton"]       = new() { ["en"] = "Pick a window",                        ["cs"] = "Vybrat okno" },
 
         // ---- Picker popup ----
         ["picker.clickToPick"]      = new() { ["en"] = "Click on a window...",                 ["cs"] = "Klikni na okno..." },
