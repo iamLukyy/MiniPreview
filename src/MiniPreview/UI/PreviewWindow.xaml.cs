@@ -200,6 +200,7 @@ public partial class PreviewWindow : Window
 
     private void PersistSettings()
     {
+        if (_store == null || _settings == null) return; // OnLoaded nemuselo dobehnout
         _settings.Window.X = (int)Left;
         _settings.Window.Y = (int)Top;
         _settings.Window.Width = (int)Width;
@@ -209,10 +210,10 @@ public partial class PreviewWindow : Window
 
     private void OnClosing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
-        PersistSettings();
-        _hotkeys?.Dispose();
-        _picker?.Dispose();
-        _capture.Dispose();
-        _audio.Dispose();
+        try { PersistSettings(); } catch { /* never block close */ }
+        try { _hotkeys?.Dispose(); } catch { }
+        try { _picker?.Dispose(); } catch { }
+        try { _capture.Dispose(); } catch { }
+        try { _audio.Dispose(); } catch { }
     }
 }
