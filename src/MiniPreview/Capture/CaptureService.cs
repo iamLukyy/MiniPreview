@@ -135,17 +135,23 @@ public sealed class CaptureService : IDisposable
 
     private void ProcessFrame(Direct3D11CaptureFrame frame)
     {
-        if (_d3d == null || _pool == null) return;
+        // Snapshot fields into locals to avoid TOCTOU race with Stop() on another thread.
+        // If Stop() runs concurrently, the locals may be non-null while the underlying
+        // objects are being disposed; D3D11 operations on a disposed device return E_FAIL
+        // gracefully, which is caught by the WGC frame-pool's exception handler.
+        var d3d = _d3d;
+        var pool = _pool;
+        if (d3d == null || pool == null) return;
 
         var sourceTexture = D3D11InteropHelpers.GetTexture(frame.Surface);
         var size = frame.ContentSize;
         if (size.Width <= 0 || size.Height <= 0) return;
 
-        var staging = _pool.Get(size.Width, size.Height);
-        _d3d.Context.CopyResource(staging, sourceTexture);
+        var staging = pool.Get(size.Width, size.Height);
+        d3d.Context.CopyResource(staging, sourceTexture);
 
         // Map(resource, subresource, MapMode, MapFlags, out MappedSubresource)
-        _d3d.Context.Map(staging, 0, MapMode.Read, MapFlags.None, out var mapped);
+        d3d.Context.Map(staging, 0, MapMode.Read, MapFlags.None, out var mapped);
         try
         {
             int srcStride = mapped.RowPitch;
@@ -155,7 +161,7 @@ public sealed class CaptureService : IDisposable
         }
         finally
         {
-            _d3d.Context.Unmap(staging, 0);
+            d3d.Context.Unmap(staging, 0);
         }
     }
 
