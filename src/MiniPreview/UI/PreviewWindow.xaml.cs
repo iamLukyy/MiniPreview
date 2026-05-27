@@ -136,7 +136,7 @@ public partial class PreviewWindow : Window
             MuteItem.IsChecked = _audio.IsMuted(_currentTarget.ProcessId);
         }
         foreach (MenuItem item in FpsMenu.Items)
-            item.IsChecked = (int)int.Parse(item.Tag!.ToString()!) == _settings.Capture.Fps;
+            item.IsChecked = int.Parse(item.Tag!.ToString()!) == _settings.Capture.Fps;
     }
 
     private static string Truncate(string s, int n) => s.Length <= n ? s : s.Substring(0, n - 1) + "…";
@@ -186,8 +186,14 @@ public partial class PreviewWindow : Window
 
     private void OnSettingsClick(object sender, RoutedEventArgs e)
     {
-        // TODO Task 17: SettingsWindow dialog
-        MessageBox.Show("Settings dialog — TODO Task 17", "MiniPreview");
+        var dlg = new SettingsWindow(_settings) { Owner = this };
+        if (dlg.ShowDialog() == true)
+        {
+            PersistSettings();
+            Topmost = _settings.Window.AlwaysOnTop;
+            _hotkeys?.Dispose();
+            InitHotkeys();
+        }
     }
 
     private void OnExitClick(object sender, RoutedEventArgs e) => Application.Current.Shutdown();
