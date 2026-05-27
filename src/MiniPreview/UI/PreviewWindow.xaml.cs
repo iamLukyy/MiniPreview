@@ -8,6 +8,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+// (polling timer for minimize-state sync)
 using MiniPreview.Audio;
 using MiniPreview.Capture;
 using MiniPreview.Hotkeys;
@@ -34,6 +35,7 @@ public partial class PreviewWindow : Window
     private SettingsStore _store = null!;
     private SettingsRoot _settings = null!;
     private WindowInfo? _currentTarget;
+    private DispatcherTimer? _stateTimer;
 
     private static readonly int[] FpsPresets = { 1, 2, 5, 10, 15, 30 };
 
@@ -97,7 +99,20 @@ public partial class PreviewWindow : Window
         LoadAppIcon();
         InitHotkeys();
         TryResumeLastTarget();
-        // StartStateTimer(); // dočasně vypnuto — debugujeme black screen
+        StartMinStateTimer();
+    }
+
+    private void StartMinStateTimer()
+    {
+        // LIGHT poll — pouze IsIconic check (rychlé P/Invoke, bez NAudio).
+        // Synchronizuje minimize/restore ikonu když user manualne minimizuje target
+        // (taskbar, Win+D, app vlastni minimize button, atd.).
+        _stateTimer = new DispatcherTimer(DispatcherPriority.ApplicationIdle) { Interval = TimeSpan.FromSeconds(1) };
+        _stateTimer.Tick += (_, _) =>
+        {
+            if (_currentTarget != null) UpdateMinIcon();
+        };
+        _stateTimer.Start();
     }
 
     private void LoadAppIcon()
@@ -353,6 +368,7 @@ public partial class PreviewWindow : Window
 
     private void OnClosing(object? sender, CancelEventArgs e)
     {
+        try { _stateTimer?.Stop(); } catch { }
         try { PersistSettings(); } catch { }
         try { _hotkeys?.Dispose(); } catch { }
         try { _picker?.Dispose(); } catch { }
