@@ -5,6 +5,7 @@ namespace MiniPreview.Settings;
 public sealed class SettingsRoot
 {
     public int Version { get; set; } = 1;
+    public string Language { get; set; } = "en";
     public WindowSettings Window { get; set; } = new();
     public CaptureSettings Capture { get; set; } = new();
     public HotkeySettings Hotkeys { get; set; } = new();

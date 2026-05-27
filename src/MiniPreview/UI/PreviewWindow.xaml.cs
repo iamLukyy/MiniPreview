@@ -12,6 +12,7 @@ using System.Windows.Threading;
 using MiniPreview.Audio;
 using MiniPreview.Capture;
 using MiniPreview.Hotkeys;
+using MiniPreview.Localization;
 using MiniPreview.Settings;
 using MiniPreview.Windows;
 
@@ -45,7 +46,18 @@ public partial class PreviewWindow : Window
         Loaded += OnLoaded;
         Closing += OnClosing;
         _capture.FrameReady += OnFrameReady;
-        _capture.TargetClosed += () => Dispatcher.BeginInvoke(() => ShowStatus("Target lost — vyber okno"));
+        _capture.TargetClosed += () => Dispatcher.BeginInvoke(() => ShowStatus(Strings.T("status.targetLost")));
+    }
+
+    private void ApplyLocalizedTooltips()
+    {
+        PickBtn.ToolTip      = Strings.T("tooltip.pick");
+        MinTargetBtn.ToolTip = Strings.T("tooltip.minTarget");
+        PauseBtn.ToolTip     = Strings.T("tooltip.pause");
+        MuteBtn.ToolTip      = Strings.T("tooltip.mute");
+        FpsBtn.ToolTip       = Strings.T("tooltip.fps");
+        SettingsBtn.ToolTip  = Strings.T("tooltip.settings");
+        CloseBtn.ToolTip     = Strings.T("tooltip.close");
     }
 
     private void OnTopBarDrag(object sender, MouseButtonEventArgs e)
@@ -97,6 +109,7 @@ public partial class PreviewWindow : Window
         MinTargetBtn.Content = IconMinimize;
 
         LoadAppIcon();
+        ApplyLocalizedTooltips();
         InitHotkeys();
         TryResumeLastTarget();
         StartMinStateTimer();
@@ -148,16 +161,16 @@ public partial class PreviewWindow : Window
         }
         catch (Exception ex)
         {
-            ShowStatus("Hotkey selhal: " + ex.Message);
+            ShowStatus(Strings.T("status.hotkeyFailed", ex.Message));
         }
     }
 
     private void TryResumeLastTarget()
     {
         var last = _settings.Capture.LastTargetProcessName;
-        if (string.IsNullOrEmpty(last)) { ShowStatus("Klikni na ikonu monitoru nahoru a vyber okno"); return; }
+        if (string.IsNullOrEmpty(last)) { ShowStatus(Strings.T("status.selectWindow")); return; }
         var match = _enumerator.EnumerateVisibleWindows().FirstOrDefault(w => w.ProcessName.Equals(last, StringComparison.OrdinalIgnoreCase));
-        if (match == null) { ShowStatus($"'{last}' neni spusteno — vyber jine okno"); return; }
+        if (match == null) { ShowStatus(Strings.T("status.targetNotRunning", last)); return; }
         SetTarget(match);
     }
 
@@ -172,7 +185,7 @@ public partial class PreviewWindow : Window
         }
         catch (Exception ex)
         {
-            ShowStatus("Capture failed: " + ex.Message);
+            ShowStatus(Strings.T("status.captureFailed", ex.Message));
         }
         _settings.Capture.LastTargetProcessName = info.ProcessName;
         _settings.Capture.LastTargetWindowTitle = info.Title;
@@ -197,7 +210,7 @@ public partial class PreviewWindow : Window
         var btn = (Button)sender;
         var menu = new ContextMenu { PlacementTarget = btn, Placement = PlacementMode.Bottom };
 
-        var pickItem = new MenuItem { Header = "Klikni na okno..." };
+        var pickItem = new MenuItem { Header = Strings.T("picker.clickToPick") };
         pickItem.Click += (_, _) => BeginPickWindow();
         menu.Items.Add(pickItem);
 
@@ -219,7 +232,7 @@ public partial class PreviewWindow : Window
     {
         _picker?.Dispose();
         _picker = new WindowPicker();
-        ShowStatus("Klikni na okno ktere chces sledovat...");
+        ShowStatus(Strings.T("status.clickPick"));
         _picker.BeginPick(hwnd =>
         {
             Dispatcher.BeginInvoke(() =>
@@ -228,7 +241,7 @@ public partial class PreviewWindow : Window
                 if (hwnd == IntPtr.Zero) return;
                 var info = _enumerator.EnumerateVisibleWindows().FirstOrDefault(w => w.Handle == hwnd);
                 if (info != null) SetTarget(info);
-                else ShowStatus("Nepodarilo se najit vybrane okno");
+                else ShowStatus(Strings.T("status.pickNotFound"));
             });
         });
     }
@@ -242,7 +255,7 @@ public partial class PreviewWindow : Window
         foreach (var fps in FpsPresets)
         {
             var captured = fps;
-            var item = new MenuItem { Header = $"{fps} FPS", IsCheckable = true, IsChecked = fps == _settings.Capture.Fps };
+            var item = new MenuItem { Header = Strings.T("picker.fps", fps), IsCheckable = true, IsChecked = fps == _settings.Capture.Fps };
             item.Click += (_, _) => SetFps(captured);
             menu.Items.Add(item);
         }
@@ -267,14 +280,14 @@ public partial class PreviewWindow : Window
             _capture.Resume();
             HideStatus();
             PauseBtn.Content = IconPause;
-            PauseBtn.ToolTip = "Pauza nahledu (Ctrl+Alt+P)";
+            PauseBtn.ToolTip = Strings.T("tooltip.pause");
             PauseOverlay.Visibility = Visibility.Collapsed;
         }
         else
         {
             _capture.Pause();
             PauseBtn.Content = IconPlay;
-            PauseBtn.ToolTip = "Play (Ctrl+Alt+P)";
+            PauseBtn.ToolTip = Strings.T("tooltip.resume");
             PauseOverlay.Visibility = Visibility.Visible;
         }
     }
@@ -287,7 +300,7 @@ public partial class PreviewWindow : Window
         if (_currentTarget == null) return;
         if (!_audio.HasAudioSession(_currentTarget.ProcessId))
         {
-            ShowStatus("Tato appka momentalne neprehrava zvuk");
+            ShowStatus(Strings.T("status.noAudio"));
             return;
         }
         _audio.ToggleMute(_currentTarget.ProcessId);
@@ -300,13 +313,13 @@ public partial class PreviewWindow : Window
         if (muted)
         {
             MuteBtn.Content = IconMute;
-            MuteBtn.ToolTip = "Unmute target (Ctrl+Alt+M)";
+            MuteBtn.ToolTip = Strings.T("tooltip.unmute");
             MuteOverlay.Visibility = Visibility.Visible;
         }
         else
         {
             MuteBtn.Content = IconSpeaker;
-            MuteBtn.ToolTip = "Mute target (Ctrl+Alt+M)";
+            MuteBtn.ToolTip = Strings.T("tooltip.mute");
             MuteOverlay.Visibility = Visibility.Collapsed;
         }
     }
@@ -331,12 +344,12 @@ public partial class PreviewWindow : Window
         if (NativeMethods.IsIconic(_currentTarget.Handle))
         {
             MinTargetBtn.Content = IconRestore;
-            MinTargetBtn.ToolTip = "Obnov target (Ctrl+Alt+H)";
+            MinTargetBtn.ToolTip = Strings.T("tooltip.minTargetRestore");
         }
         else
         {
             MinTargetBtn.Content = IconMinimize;
-            MinTargetBtn.ToolTip = "Minimalizuj target (Ctrl+Alt+H)";
+            MinTargetBtn.ToolTip = Strings.T("tooltip.minTargetMin");
         }
     }
 

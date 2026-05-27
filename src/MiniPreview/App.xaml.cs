@@ -38,7 +38,12 @@ public partial class App : Application
             ex.SetObserved();
         };
 
-        // Feature check
+        // Settings first — language must be set before any UI strings are read
+        SettingsStore = new SettingsStore();
+        Settings = SettingsStore.Load();
+        Localization.Strings.Language = Settings.Language;
+
+        // Feature check (uses localized title/buttons)
         var checker = FeatureChecker.CreateDefault();
         var probes = checker.RunProbes();
         if (!FeatureChecker.AllOk(probes))
@@ -47,10 +52,6 @@ public partial class App : Application
             var ok = dlg.ShowDialog();
             if (ok != true) { Shutdown(1); return; }
         }
-
-        // Settings
-        SettingsStore = new SettingsStore();
-        Settings = SettingsStore.Load();
 
         // Main window
         var main = new PreviewWindow();
@@ -70,8 +71,9 @@ public partial class App : Application
         try
         {
             MessageBox.Show(
-                $"Unhandled exception ({source}):\n\n{ex.GetType().Name}: {ex.Message}\n\nFull log: {LogPath}",
-                "MiniPreview — chyba", MessageBoxButton.OK, MessageBoxImage.Error);
+                Localization.Strings.T("error.body", source, ex.GetType().Name, ex.Message, LogPath),
+                Localization.Strings.T("error.title"),
+                MessageBoxButton.OK, MessageBoxImage.Error);
         }
         catch { }
     }
