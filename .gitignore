@@ -25,3 +25,7 @@ tools/screenshots/
 
 # Logy
 *.log
+
+# Publish output v repo rootu (single-file exe + pdb)
+/MiniPreview.exe
+/MiniPreview.pdb
