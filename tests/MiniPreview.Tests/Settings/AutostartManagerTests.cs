@@ -19,7 +19,7 @@ public class AutostartManagerTests : IDisposable
 
     private static void Cleanup()
     {
-        try { Registry.CurrentUser.DeleteSubKey(TestSubKey, false); } catch { }
+        try { Registry.CurrentUser.DeleteSubKeyTree(@"Software\MiniPreviewTests", false); } catch { }
     }
 
     [Fact]
