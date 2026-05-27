@@ -62,7 +62,13 @@
                 <DockPanel LastChildFill="True">
                     <Image x:Name="AppIcon" DockPanel.Dock="Left" Width="16" Height="16" Margin="6,0,2,0" VerticalAlignment="Center"/>
                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Margin="0,2,4,2">
-                        <Button x:Name="PickBtn"     Style="{StaticResource TbBtn}"      Content="&#xE7F4;" ToolTip="Vyber okno (Ctrl+Alt+L)" Click="OnPickBtnClick"/>
+                        <!-- Wide dropdown-looking source picker so it reads as interactive -->
+                        <Button x:Name="PickBtn" Style="{StaticResource TbBtn}" Width="Auto" MinWidth="44" Padding="6,0" ToolTip="Vyber okno (Ctrl+Alt+L)" Click="OnPickBtnClick">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE7F4;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center"/>
+                                <TextBlock Text="&#xE70D;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="9"  VerticalAlignment="Center" Margin="2,2,0,0"/>
+                            </StackPanel>
+                        </Button>
                         <Button x:Name="MinTargetBtn" Style="{StaticResource TbBtn}"     Content="&#xE921;" ToolTip="Minimalizuj/obnov target (Ctrl+Alt+H)" Click="OnMinTargetClick"/>
                         <Button x:Name="PauseBtn"    Style="{StaticResource TbBtn}"      Content="&#xE769;" ToolTip="Pauza náhledu (Ctrl+Alt+P)" Click="OnPauseClick"/>
                         <Button x:Name="MuteBtn"     Style="{StaticResource TbBtn}"      Content="&#xE767;" ToolTip="Mute target (Ctrl+Alt+M)" Click="OnMuteClick"/>
