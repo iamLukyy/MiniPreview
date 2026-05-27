@@ -10,6 +10,38 @@
         ShowInTaskbar="True"
         ResizeMode="CanResizeWithGrip">
     <Window.Resources>
+        <!-- Pretty dark tooltip (replaces the default native one). NOTE: do NOT
+             set OverridesDefaultStyle here — it breaks Popup hosting in some
+             scenarios. Just override Template + brushes. -->
+        <Style TargetType="ToolTip">
+            <Setter Property="Background" Value="#F2202428"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#33FFFFFF"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="HasDropShadow" Value="True"/>
+            <Setter Property="Placement" Value="Bottom"/>
+            <Setter Property="VerticalOffset" Value="4"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToolTip">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="5"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              TextBlock.Foreground="{TemplateBinding Foreground}"
+                                              TextBlock.FontSize="{TemplateBinding FontSize}"
+                                              TextBlock.FontFamily="{TemplateBinding FontFamily}"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- Toolbar button: flat, white glyph, hover highlight -->
         <Style x:Key="TbBtn" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>

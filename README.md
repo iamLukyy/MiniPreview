@@ -11,6 +11,10 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-lightgrey" alt="MIT license"></a>
 </p>
 
+<p align="center">
+  <img src="docs/images/hero.png" alt="MiniPreview window showing a live thumbnail of another app" width="640">
+</p>
+
 ---
 
 ## What it does
