@@ -21,6 +21,9 @@
             <Setter Property="Height" Value="24"/>
             <Setter Property="Padding" Value="0"/>
             <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="ToolTipService.InitialShowDelay" Value="350"/>
+            <Setter Property="ToolTipService.ShowDuration" Value="6000"/>
+            <Setter Property="ToolTipService.BetweenShowDelay" Value="0"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -57,15 +60,17 @@
             <!-- Top toolbar -->
             <Border Grid.Row="0" Background="#C0202428" MouseLeftButtonDown="OnTopBarDrag" CornerRadius="3,3,0,0">
                 <DockPanel LastChildFill="True">
+                    <Image x:Name="AppIcon" DockPanel.Dock="Left" Width="16" Height="16" Margin="6,0,2,0" VerticalAlignment="Center"/>
                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Margin="0,2,4,2">
                         <Button x:Name="PickBtn"     Style="{StaticResource TbBtn}"      Content="&#xE7F4;" ToolTip="Vyber okno (Ctrl+Alt+L)" Click="OnPickBtnClick"/>
-                        <Button x:Name="PauseBtn"    Style="{StaticResource TbBtn}"      Content="&#xE769;" ToolTip="Pauza (Ctrl+Alt+P)"     Click="OnPauseClick"/>
+                        <Button x:Name="MinTargetBtn" Style="{StaticResource TbBtn}"     Content="&#xE921;" ToolTip="Minimalizuj/obnov target (Ctrl+Alt+H)" Click="OnMinTargetClick"/>
+                        <Button x:Name="PauseBtn"    Style="{StaticResource TbBtn}"      Content="&#xE769;" ToolTip="Pauza náhledu (Ctrl+Alt+P)" Click="OnPauseClick"/>
                         <Button x:Name="MuteBtn"     Style="{StaticResource TbBtn}"      Content="&#xE767;" ToolTip="Mute target (Ctrl+Alt+M)" Click="OnMuteClick"/>
                         <Button x:Name="FpsBtn"      Style="{StaticResource TbBtn}"      Content="5"        ToolTip="FPS náhledu" FontFamily="Segoe UI" FontSize="11" Click="OnFpsBtnClick"/>
                         <Button x:Name="SettingsBtn" Style="{StaticResource TbBtn}"      Content="&#xE713;" ToolTip="Nastavení" Click="OnSettingsClick"/>
                         <Button x:Name="CloseBtn"    Style="{StaticResource TbCloseBtn}" Content="&#xE8BB;" ToolTip="Konec" Click="OnExitClick"/>
                     </StackPanel>
-                    <TextBlock x:Name="TargetLabel" Foreground="#D0FFFFFF" FontSize="11" FontFamily="Segoe UI" VerticalAlignment="Center" Margin="8,0,8,0" Text="MiniPreview" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock x:Name="TargetLabel" Foreground="#D0FFFFFF" FontSize="11" FontFamily="Segoe UI" VerticalAlignment="Center" Margin="4,0,8,0" Text="MiniPreview" TextTrimming="CharacterEllipsis"/>
                 </DockPanel>
             </Border>
 

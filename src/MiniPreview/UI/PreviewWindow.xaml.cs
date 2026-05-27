@@ -17,11 +17,13 @@ namespace MiniPreview.UI;
 
 public partial class PreviewWindow : Window
 {
-    // Segoe Fluent Icons glyphs ( range = private use area)
-    private const string IconPlay    = "";
-    private const string IconPause   = "";
-    private const string IconSpeaker = "";
-    private const string IconMute    = "";
+    // Segoe Fluent Icons glyphs (U+E768 Play, U+E769 Pause, U+E767 Volume, U+E74F Mute, U+E921 ChromeMinimize, U+E923 ChromeRestore)
+    private const string IconPlay     = "";
+    private const string IconPause    = "";
+    private const string IconSpeaker  = "";
+    private const string IconMute     = "";
+    private const string IconMinimize = "";
+    private const string IconRestore  = "";
 
     private readonly CaptureService _capture = new();
     private readonly AudioMuteService _audio = new();
@@ -89,9 +91,27 @@ public partial class PreviewWindow : Window
         FpsBtn.Content = _settings.Capture.Fps.ToString();
         PauseBtn.Content = IconPause;
         MuteBtn.Content = IconSpeaker;
+        MinTargetBtn.Content = IconMinimize;
 
+        LoadAppIcon();
         InitHotkeys();
         TryResumeLastTarget();
+    }
+
+    private void LoadAppIcon()
+    {
+        try
+        {
+            var uri = new Uri("pack://application:,,,/Resources/MiniPreview.ico", UriKind.Absolute);
+            var streamInfo = Application.GetResourceStream(uri);
+            if (streamInfo == null) return;
+            var decoder = new IconBitmapDecoder(streamInfo.Stream, BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
+            var smallFrame = decoder.Frames.OrderBy(f => Math.Abs(f.PixelWidth - 16)).First();
+            var bigFrame   = decoder.Frames.OrderByDescending(f => f.PixelWidth).First();
+            AppIcon.Source = smallFrame;
+            Icon = bigFrame;
+        }
+        catch { /* no icon, app still works */ }
     }
 
     private void InitHotkeys()
@@ -105,6 +125,9 @@ public partial class PreviewWindow : Window
             _hotkeys.Register(muteDef, () => Dispatcher.BeginInvoke(ToggleMute));
             var pickDef = HotkeyDefinition.Parse(_settings.Hotkeys.OpenPicker.Modifiers, _settings.Hotkeys.OpenPicker.Key);
             _hotkeys.Register(pickDef, () => Dispatcher.BeginInvoke(BeginPickWindow));
+            // Hardcoded for now (no settings entry yet)
+            var minDef = HotkeyDefinition.Parse(new[] { "Ctrl", "Alt" }, "H");
+            _hotkeys.Register(minDef, () => Dispatcher.BeginInvoke(ToggleMinimizeTarget));
         }
         catch (Exception ex)
         {
@@ -115,9 +138,9 @@ public partial class PreviewWindow : Window
     private void TryResumeLastTarget()
     {
         var last = _settings.Capture.LastTargetProcessName;
-        if (string.IsNullOrEmpty(last)) { ShowStatus("Klikni na ikonu monitoru nahoře a vyber okno"); return; }
+        if (string.IsNullOrEmpty(last)) { ShowStatus("Klikni na ikonu monitoru nahoru a vyber okno"); return; }
         var match = _enumerator.EnumerateVisibleWindows().FirstOrDefault(w => w.ProcessName.Equals(last, StringComparison.OrdinalIgnoreCase));
-        if (match == null) { ShowStatus($"'{last}' není spuštěné — vyber jiné okno"); return; }
+        if (match == null) { ShowStatus($"'{last}' neni spusteno — vyber jine okno"); return; }
         SetTarget(match);
     }
 
@@ -138,6 +161,7 @@ public partial class PreviewWindow : Window
         _settings.Capture.LastTargetWindowTitle = info.Title;
         PersistSettings();
         UpdateMuteIcon();
+        UpdateMinIcon();
     }
 
     private void ShowStatus(string text)
@@ -178,7 +202,7 @@ public partial class PreviewWindow : Window
     {
         _picker?.Dispose();
         _picker = new WindowPicker();
-        ShowStatus("Klikni na okno které chceš sledovat...");
+        ShowStatus("Klikni na okno ktere chces sledovat...");
         _picker.BeginPick(hwnd =>
         {
             Dispatcher.BeginInvoke(() =>
@@ -226,7 +250,7 @@ public partial class PreviewWindow : Window
             _capture.Resume();
             HideStatus();
             PauseBtn.Content = IconPause;
-            PauseBtn.ToolTip = "Pauza (Ctrl+Alt+P)";
+            PauseBtn.ToolTip = "Pauza nahledu (Ctrl+Alt+P)";
             PauseOverlay.Visibility = Visibility.Collapsed;
         }
         else
@@ -267,6 +291,35 @@ public partial class PreviewWindow : Window
             MuteBtn.Content = IconSpeaker;
             MuteBtn.ToolTip = "Mute target (Ctrl+Alt+M)";
             MuteOverlay.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    // ----- Minimize / restore target window -----
+
+    private void OnMinTargetClick(object sender, RoutedEventArgs e) => ToggleMinimizeTarget();
+    private void ToggleMinimizeTarget()
+    {
+        if (_currentTarget == null) return;
+        var hwnd = _currentTarget.Handle;
+        if (NativeMethods.IsIconic(hwnd))
+            NativeMethods.ShowWindow(hwnd, NativeMethods.SW_RESTORE);
+        else
+            NativeMethods.ShowWindow(hwnd, NativeMethods.SW_MINIMIZE);
+        Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background, UpdateMinIcon);
+    }
+
+    private void UpdateMinIcon()
+    {
+        if (_currentTarget == null) return;
+        if (NativeMethods.IsIconic(_currentTarget.Handle))
+        {
+            MinTargetBtn.Content = IconRestore;
+            MinTargetBtn.ToolTip = "Obnov target (Ctrl+Alt+H)";
+        }
+        else
+        {
+            MinTargetBtn.Content = IconMinimize;
+            MinTargetBtn.ToolTip = "Minimalizuj target (Ctrl+Alt+H)";
         }
     }
 
