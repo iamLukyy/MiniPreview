@@ -6,11 +6,16 @@
     <RootNamespace>MiniPreview</RootNamespace>
     <AssemblyName>MiniPreview</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Resources\MiniPreview.ico</ApplicationIcon>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <!-- Disable CsWinRT source generation; we only need the runtime embedded types (IObjectReference, MarshalInterface, etc.) -->
     <CsWinRTGenerateProjection>false</CsWinRTGenerateProjection>
     <StartupObject>MiniPreview.Program</StartupObject>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="Resources\MiniPreview.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Windows.CsWinRT" Version="2.2.0" />
