@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.ServiceProcess;
 using Windows.Graphics.Capture;
@@ -38,9 +39,30 @@ public sealed class FeatureChecker
         checker.AddProbe("WGC", ProbeWgc);
         checker.AddProbe("Audio Service", () => ProbeService("Audiosrv",
             "Set-Service -Name Audiosrv -StartupType Automatic; Start-Service Audiosrv"));
-        checker.AddProbe("DWM Service", () => ProbeService("uxsms",
-            "Set-Service -Name uxsms -StartupType Automatic; Start-Service uxsms"));
+        checker.AddProbe("DWM (Desktop Composition)", ProbeDwm);
         return checker;
+    }
+
+    private static ProbeResult ProbeDwm()
+    {
+        try
+        {
+            // Co reálně potřebujeme: dwm.exe běží (compozice funguje).
+            // Service uxsms je na Win11 22H2+ deprecated/neexistující — DWM startuje session manager.
+            var procs = Process.GetProcessesByName("dwm");
+            if (procs.Length > 0)
+            {
+                foreach (var p in procs) p.Dispose();
+                return new ProbeResult("DWM (Desktop Composition)", true, "dwm.exe běží", null);
+            }
+            return new ProbeResult("DWM (Desktop Composition)", false,
+                "dwm.exe nenalezen — desktop kompozice nefunguje",
+                "Restartuj Explorer: Stop-Process -Name explorer -Force; Start-Process explorer");
+        }
+        catch (Exception ex)
+        {
+            return new ProbeResult("DWM (Desktop Composition)", false, ex.Message, null);
+        }
     }
 
     private static ProbeResult ProbeWgc()
