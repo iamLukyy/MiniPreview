@@ -95,7 +95,27 @@
 
             <!-- Status overlay (only over preview area) -->
             <Grid x:Name="StatusOverlay" Grid.Row="1" Visibility="Collapsed" Background="#A0000000">
-                <TextBlock x:Name="StatusText" Foreground="White" FontSize="13" FontFamily="Segoe UI" HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" Margin="20"/>
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="20">
+                    <TextBlock x:Name="StatusText" Foreground="White" FontSize="13" FontFamily="Segoe UI" HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center"/>
+                    <Button x:Name="StatusPickBtn" Visibility="Collapsed" Margin="0,14,0,0" HorizontalAlignment="Center"
+                            Padding="16,7" Cursor="Hand" FontFamily="Segoe UI" FontSize="12" Click="OnPickBtnClick">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border x:Name="bg" Background="#3296F0" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" TextBlock.Foreground="White"/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="bg" Property="Background" Value="#4EA8F5"/>
+                                    </Trigger>
+                                    <Trigger Property="IsPressed" Value="True">
+                                        <Setter TargetName="bg" Property="Background" Value="#1F7AD4"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                </StackPanel>
             </Grid>
         </Grid>
     </Border>
