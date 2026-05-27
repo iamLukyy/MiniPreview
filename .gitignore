@@ -29,3 +29,7 @@ tools/screenshots/
 # Publish output v repo rootu (single-file exe + pdb)
 /MiniPreview.exe
 /MiniPreview.pdb
+
+# Release build outputs
+/release/
+/dist/
