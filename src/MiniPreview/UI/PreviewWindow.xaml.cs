@@ -34,7 +34,6 @@ public partial class PreviewWindow : Window
     private SettingsStore _store = null!;
     private SettingsRoot _settings = null!;
     private WindowInfo? _currentTarget;
-    private DispatcherTimer? _stateTimer;
 
     private static readonly int[] FpsPresets = { 1, 2, 5, 10, 15, 30 };
 
@@ -98,21 +97,7 @@ public partial class PreviewWindow : Window
         LoadAppIcon();
         InitHotkeys();
         TryResumeLastTarget();
-        StartStateTimer();
-    }
-
-    private void StartStateTimer()
-    {
-        // Poll target state every 500ms — sync icons with manual changes
-        // (user minimizes via taskbar, mutes via Windows volume mixer, etc.)
-        _stateTimer = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(500) };
-        _stateTimer.Tick += (_, _) =>
-        {
-            if (_currentTarget == null) return;
-            UpdateMinIcon();
-            UpdateMuteIcon();
-        };
-        _stateTimer.Start();
+        // StartStateTimer(); // dočasně vypnuto — debugujeme black screen
     }
 
     private void LoadAppIcon()
@@ -368,7 +353,6 @@ public partial class PreviewWindow : Window
 
     private void OnClosing(object? sender, CancelEventArgs e)
     {
-        try { _stateTimer?.Stop(); } catch { }
         try { PersistSettings(); } catch { }
         try { _hotkeys?.Dispose(); } catch { }
         try { _picker?.Dispose(); } catch { }
