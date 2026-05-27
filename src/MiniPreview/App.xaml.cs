@@ -1,4 +1,3 @@
-using System.Linq;
 using System.Windows;
 using MiniPreview.Bootstrap;
 using MiniPreview.SelfTest;
@@ -24,13 +23,14 @@ public partial class App : Application
             return;
         }
 
-        // Feature check (TODO Task 15: replace MessageBox with FeatureCheckDialog)
+        // Feature check
         var checker = FeatureChecker.CreateDefault();
         var probes = checker.RunProbes();
         if (!FeatureChecker.AllOk(probes))
         {
-            MessageBox.Show("Probe failed:\n" + string.Join("\n", probes.Where(p => !p.Ok).Select(p => $"{p.Name}: {p.Detail}")),
-                "MiniPreview", MessageBoxButton.OK, MessageBoxImage.Warning);
+            var dlg = new FeatureCheckDialog(probes);
+            var ok = dlg.ShowDialog();
+            if (ok != true) { Shutdown(1); return; }
         }
 
         // Settings
