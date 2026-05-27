@@ -1,6 +1,5 @@
 using System.Windows;
 using MiniPreview.Bootstrap;
-using MiniPreview.SelfTest;
 using MiniPreview.Settings;
 using MiniPreview.UI;
 
@@ -14,14 +13,6 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
-
-        // --selftest router
-        if (e.Args.Length > 0 && e.Args[0] == "--selftest")
-        {
-            var exitCode = SelfTestRunner.Run();
-            Shutdown(exitCode);
-            return;
-        }
 
         // Feature check
         var checker = FeatureChecker.CreateDefault();

@@ -9,6 +9,7 @@
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <!-- Disable CsWinRT source generation; we only need the runtime embedded types (IObjectReference, MarshalInterface, etc.) -->
     <CsWinRTGenerateProjection>false</CsWinRTGenerateProjection>
+    <StartupObject>MiniPreview.Program</StartupObject>
   </PropertyGroup>
 
   <ItemGroup>
