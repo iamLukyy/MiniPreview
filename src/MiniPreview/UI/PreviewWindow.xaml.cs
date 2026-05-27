@@ -1,7 +1,10 @@
 using System;
+using System.ComponentModel;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
 using MiniPreview.Audio;
@@ -14,6 +17,12 @@ namespace MiniPreview.UI;
 
 public partial class PreviewWindow : Window
 {
+    // Segoe Fluent Icons glyphs ( range = private use area)
+    private const string IconPlay    = "";
+    private const string IconPause   = "";
+    private const string IconSpeaker = "";
+    private const string IconMute    = "";
+
     private readonly CaptureService _capture = new();
     private readonly AudioMuteService _audio = new();
     private readonly WindowEnumerator _enumerator = new();
@@ -23,14 +32,21 @@ public partial class PreviewWindow : Window
     private SettingsRoot _settings = null!;
     private WindowInfo? _currentTarget;
 
+    private static readonly int[] FpsPresets = { 1, 2, 5, 10, 15, 30 };
+
     public PreviewWindow()
     {
         InitializeComponent();
         Loaded += OnLoaded;
         Closing += OnClosing;
-        MouseLeftButtonDown += (_, e) => { if (e.ButtonState == MouseButtonState.Pressed) DragMove(); };
         _capture.FrameReady += OnFrameReady;
         _capture.TargetClosed += () => Dispatcher.BeginInvoke(() => ShowStatus("Target lost — vyber okno"));
+    }
+
+    private void OnTopBarDrag(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ButtonState == MouseButtonState.Pressed && e.ChangedButton == MouseButton.Left)
+            DragMove();
     }
 
     private void OnFrameReady(CapturedFrame frame)
@@ -44,14 +60,14 @@ public partial class PreviewWindow : Window
                 int dstStride = frame.Width * 4;
                 if (frame.SourceStride == dstStride)
                 {
-                    System.Runtime.InteropServices.Marshal.Copy(frame.Bgra, 0, wb.BackBuffer, frame.Bgra.Length);
+                    Marshal.Copy(frame.Bgra, 0, wb.BackBuffer, frame.Bgra.Length);
                 }
                 else
                 {
                     for (int y = 0; y < frame.Height; y++)
-                        System.Runtime.InteropServices.Marshal.Copy(frame.Bgra, y * frame.SourceStride, wb.BackBuffer + y * dstStride, dstStride);
+                        Marshal.Copy(frame.Bgra, y * frame.SourceStride, wb.BackBuffer + y * dstStride, dstStride);
                 }
-                wb.AddDirtyRect(new System.Windows.Int32Rect(0, 0, frame.Width, frame.Height));
+                wb.AddDirtyRect(new Int32Rect(0, 0, frame.Width, frame.Height));
             }
             finally { wb.Unlock(); }
             wb.Freeze();
@@ -70,6 +86,9 @@ public partial class PreviewWindow : Window
         Width = _settings.Window.Width;
         Height = _settings.Window.Height;
         Topmost = _settings.Window.AlwaysOnTop;
+        FpsBtn.Content = _settings.Capture.Fps.ToString();
+        PauseBtn.Content = IconPause;
+        MuteBtn.Content = IconSpeaker;
 
         InitHotkeys();
         TryResumeLastTarget();
@@ -96,20 +115,29 @@ public partial class PreviewWindow : Window
     private void TryResumeLastTarget()
     {
         var last = _settings.Capture.LastTargetProcessName;
-        if (string.IsNullOrEmpty(last)) { ShowStatus("Pravým klikem vyber okno"); return; }
+        if (string.IsNullOrEmpty(last)) { ShowStatus("Klikni na ikonu monitoru nahoře a vyber okno"); return; }
         var match = _enumerator.EnumerateVisibleWindows().FirstOrDefault(w => w.ProcessName.Equals(last, StringComparison.OrdinalIgnoreCase));
-        if (match == null) { ShowStatus($"'{last}' není spuštěné — pravým vyber jiné"); return; }
+        if (match == null) { ShowStatus($"'{last}' není spuštěné — vyber jiné okno"); return; }
         SetTarget(match);
     }
 
     private void SetTarget(WindowInfo info)
     {
         _currentTarget = info;
+        TargetLabel.Text = $"{info.ProcessName} — {Truncate(info.Title, 40)}";
         HideStatus();
-        _capture.Start(info.Handle, _settings.Capture.Fps);
+        try
+        {
+            _capture.Start(info.Handle, _settings.Capture.Fps);
+        }
+        catch (Exception ex)
+        {
+            ShowStatus("Capture failed: " + ex.Message);
+        }
         _settings.Capture.LastTargetProcessName = info.ProcessName;
         _settings.Capture.LastTargetWindowTitle = info.Title;
         PersistSettings();
+        UpdateMuteIcon();
     }
 
     private void ShowStatus(string text)
@@ -119,29 +147,33 @@ public partial class PreviewWindow : Window
     }
     private void HideStatus() => StatusOverlay.Visibility = Visibility.Collapsed;
 
-    private void OnMenuOpened(object sender, RoutedEventArgs e)
+    private static string Truncate(string s, int n) => s.Length <= n ? s : s.Substring(0, n - 1) + "…";
+
+    // ----- Picker -----
+
+    private void OnPickBtnClick(object sender, RoutedEventArgs e)
     {
-        WindowsMenu.Items.Clear();
+        var btn = (Button)sender;
+        var menu = new ContextMenu { PlacementTarget = btn, Placement = PlacementMode.Bottom };
+
+        var pickItem = new MenuItem { Header = "Klikni na okno..." };
+        pickItem.Click += (_, _) => BeginPickWindow();
+        menu.Items.Add(pickItem);
+
+        menu.Items.Add(new Separator());
+
         foreach (var w in _enumerator.EnumerateVisibleWindows())
         {
             var captured = w;
-            var item = new MenuItem { Header = $"[{w.ProcessName}] {Truncate(w.Title, 50)}", Tag = w };
-            if (w.Icon != null) item.Icon = new System.Windows.Controls.Image { Source = w.Icon, Width = 16, Height = 16 };
+            var item = new MenuItem { Header = $"[{w.ProcessName}] {Truncate(w.Title, 60)}" };
+            if (w.Icon != null) item.Icon = new Image { Source = w.Icon, Width = 16, Height = 16 };
             item.Click += (_, _) => SetTarget(captured);
-            WindowsMenu.Items.Add(item);
+            menu.Items.Add(item);
         }
-        PauseItem.IsChecked = _capture.IsPaused;
-        if (_currentTarget != null)
-        {
-            MuteItem.IsChecked = _audio.IsMuted(_currentTarget.ProcessId);
-        }
-        foreach (MenuItem item in FpsMenu.Items)
-            item.IsChecked = int.Parse(item.Tag!.ToString()!) == _settings.Capture.Fps;
+
+        menu.IsOpen = true;
     }
 
-    private static string Truncate(string s, int n) => s.Length <= n ? s : s.Substring(0, n - 1) + "…";
-
-    private void OnPickWindow(object sender, RoutedEventArgs e) => BeginPickWindow();
     private void BeginPickWindow()
     {
         _picker?.Dispose();
@@ -155,34 +187,90 @@ public partial class PreviewWindow : Window
                 if (hwnd == IntPtr.Zero) return;
                 var info = _enumerator.EnumerateVisibleWindows().FirstOrDefault(w => w.Handle == hwnd);
                 if (info != null) SetTarget(info);
-                else ShowStatus("Nepodařilo se najít vybrané okno");
+                else ShowStatus("Nepodarilo se najit vybrane okno");
             });
         });
     }
 
-    private void OnFpsClick(object sender, RoutedEventArgs e)
+    // ----- FPS -----
+
+    private void OnFpsBtnClick(object sender, RoutedEventArgs e)
     {
-        var fps = int.Parse(((MenuItem)sender).Tag!.ToString()!);
+        var btn = (Button)sender;
+        var menu = new ContextMenu { PlacementTarget = btn, Placement = PlacementMode.Bottom };
+        foreach (var fps in FpsPresets)
+        {
+            var captured = fps;
+            var item = new MenuItem { Header = $"{fps} FPS", IsCheckable = true, IsChecked = fps == _settings.Capture.Fps };
+            item.Click += (_, _) => SetFps(captured);
+            menu.Items.Add(item);
+        }
+        menu.IsOpen = true;
+    }
+
+    private void SetFps(int fps)
+    {
         _settings.Capture.Fps = fps;
         _capture.SetFps(fps);
+        FpsBtn.Content = fps.ToString();
         PersistSettings();
     }
+
+    // ----- Pause -----
 
     private void OnPauseClick(object sender, RoutedEventArgs e) => TogglePause();
     private void TogglePause()
     {
-        if (_capture.IsPaused) { _capture.Resume(); HideStatus(); }
-        else { _capture.Pause(); ShowStatus("Paused"); }
-        PauseItem.IsChecked = _capture.IsPaused;
+        if (_capture.IsPaused)
+        {
+            _capture.Resume();
+            HideStatus();
+            PauseBtn.Content = IconPause;
+            PauseBtn.ToolTip = "Pauza (Ctrl+Alt+P)";
+            PauseOverlay.Visibility = Visibility.Collapsed;
+        }
+        else
+        {
+            _capture.Pause();
+            PauseBtn.Content = IconPlay;
+            PauseBtn.ToolTip = "Play (Ctrl+Alt+P)";
+            PauseOverlay.Visibility = Visibility.Visible;
+        }
     }
+
+    // ----- Mute -----
 
     private void OnMuteClick(object sender, RoutedEventArgs e) => ToggleMute();
     private void ToggleMute()
     {
         if (_currentTarget == null) return;
-        var muted = _audio.ToggleMute(_currentTarget.ProcessId);
-        MuteItem.IsChecked = muted;
+        if (!_audio.HasAudioSession(_currentTarget.ProcessId))
+        {
+            ShowStatus("Tato appka momentalne neprehrava zvuk");
+            return;
+        }
+        _audio.ToggleMute(_currentTarget.ProcessId);
+        UpdateMuteIcon();
     }
+
+    private void UpdateMuteIcon()
+    {
+        var muted = _currentTarget != null && _audio.IsMuted(_currentTarget.ProcessId);
+        if (muted)
+        {
+            MuteBtn.Content = IconMute;
+            MuteBtn.ToolTip = "Unmute target (Ctrl+Alt+M)";
+            MuteOverlay.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            MuteBtn.Content = IconSpeaker;
+            MuteBtn.ToolTip = "Mute target (Ctrl+Alt+M)";
+            MuteOverlay.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    // ----- Settings -----
 
     private void OnSettingsClick(object sender, RoutedEventArgs e)
     {
@@ -200,7 +288,7 @@ public partial class PreviewWindow : Window
 
     private void PersistSettings()
     {
-        if (_store == null || _settings == null) return; // OnLoaded nemuselo dobehnout
+        if (_store == null || _settings == null) return;
         _settings.Window.X = (int)Left;
         _settings.Window.Y = (int)Top;
         _settings.Window.Width = (int)Width;
@@ -208,9 +296,9 @@ public partial class PreviewWindow : Window
         _store.Save(_settings);
     }
 
-    private void OnClosing(object? sender, System.ComponentModel.CancelEventArgs e)
+    private void OnClosing(object? sender, CancelEventArgs e)
     {
-        try { PersistSettings(); } catch { /* never block close */ }
+        try { PersistSettings(); } catch { }
         try { _hotkeys?.Dispose(); } catch { }
         try { _picker?.Dispose(); } catch { }
         try { _capture.Dispose(); } catch { }
