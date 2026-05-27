@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.ServiceProcess;
+using Windows.Graphics.Capture;
 
 namespace MiniPreview.Bootstrap;
 
@@ -46,7 +47,7 @@ public sealed class FeatureChecker
     {
         try
         {
-            var ok = Windows.Graphics.Capture.GraphicsCaptureSession.IsSupported();
+            var ok = GraphicsCaptureSession.IsSupported();
             return ok
                 ? new ProbeResult("WGC", true, "Windows.Graphics.Capture dostupné", null)
                 : new ProbeResult("WGC", false, "WGC nepodporováno na tomto systému (vyžaduje Win10 1903+)", null);
